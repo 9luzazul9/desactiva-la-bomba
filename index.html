@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desactiva la Bomba</title>
+<style>
+:root{--bg:#111317;--panel:#1a1f26;--text:#f5f7fa;--muted:#aeb8c4;--accent:#e63946;--ok:#2fb344;--blue:#339af0;--border:#39424e}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(circle at top,#26303a 0,#111317 55%,#090b0d 100%);color:var(--text);min-height:100vh}
+header{text-align:center;padding:24px 16px 10px}h1{margin:0;font-size:clamp(2rem,6vw,3.4rem)}.subtitle{color:var(--muted);margin-top:8px}
+.wrap{width:min(1000px,95vw);margin:0 auto 40px;display:grid;gap:18px}.card{background:#1d232b;border:1px solid var(--border);border-radius:20px;padding:18px}.center{text-align:center}.hidden{display:none!important}
+.roleBox{display:grid;grid-template-columns:1fr 1fr;gap:16px}.role,.module,.manualSection{background:#13181e;border:1px solid var(--border);border-radius:16px;padding:18px}.module,.manualSection{margin-top:14px}
+button{font:inherit;border:0;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}.primary{background:var(--accent);color:white}.blue{background:var(--blue);color:white}.secondary{background:#e9ecef;color:#111}
+.timer{font-family:monospace;font-size:clamp(3rem,12vw,6rem);font-weight:900;color:#ff6b6b}.tiny{color:var(--muted);font-size:.92rem}.status{min-height:1.5em;margin-top:10px;font-weight:700}.ok{color:#69db7c}.bad{color:#ff8787}
+.wires{display:grid;gap:10px}.wire{height:34px;border-radius:8px;border:2px solid rgba(255,255,255,.18);cursor:pointer}.red{background:#e03131}.bluewire{background:#1971c2}.yellow{background:#f6c344}.white{background:#f8f9fa}.black{background:#111}
+.symbols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.symbol{background:#f1f3f5;color:#111;border-radius:10px;padding:18px 8px;font-size:2rem;text-align:center;cursor:pointer;border:3px solid transparent}.symbol.selected{border-color:#ffd43b}
+.codeDisplay{font-family:monospace;font-size:2rem;letter-spacing:.18em;background:#0b0e12;border:1px solid #424b55;border-radius:12px;padding:14px;text-align:center}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+@media(max-width:760px){.roleBox{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>💣 Desactiva la Bomba</h1><div class="subtitle">Juego cooperativo para dos teléfonos · sin conexión entre dispositivos</div></header>
+<main class="wrap">
+<section id="startCard" class="card center">
+<h2>Elijan sus roles</h2><p class="tiny">Los dos abren este mismo juego. Uno elige Técnico y el otro Experto.</p>
+<div class="roleBox">
+<div class="role"><h3>🧰 Técnico</h3><p>Ve la bomba y describe lo que aparece. No puede ver el manual.</p><button class="primary" onclick="startTechnician()">Soy el Técnico</button></div>
+<div class="role"><h3>📘 Experto</h3><p>Ve el manual y guía al Técnico. No puede ver la bomba.</p><button class="blue" onclick="startExpert()">Soy el Experto</button></div>
+</div>
+</section>
+<section id="techCard" class="card hidden">
+<div class="center"><h2>Panel de la bomba</h2><div id="timer" class="timer">05:00</div><div>Errores: <span id="strikeCount">0</span>/3</div><div id="techStatus" class="status"></div></div>
+<div class="module"><h3>Módulo 1: Cables</h3><p class="tiny">Describe al Experto los colores y su orden.</p><div id="wireBox" class="wires"></div></div>
+<div class="module"><h3>Módulo 2: Símbolos</h3><p class="tiny">Describe los cuatro símbolos y púlsalos en el orden correcto.</p><div id="symbolBox" class="symbols"></div></div>
+<div class="module"><h3>Módulo 3: Código</h3><p class="tiny">Comunica al Experto el número de serie y las pistas.</p><div class="codeDisplay" id="serialDisplay"></div><p id="codeHint1"></p><p id="codeHint2"></p><div class="row"><button class="secondary" onclick="enterCode()">Introducir código final</button></div></div>
+<div class="center" style="margin-top:18px"><button class="secondary" onclick="location.reload()">Reiniciar</button></div>
+</section>
+<section id="expertCard" class="card hidden">
+<div class="center"><h2>Manual del Experto</h2><p class="tiny">No mires la pantalla del Técnico. Escucha su descripción y guíalo.</p></div>
+<div class="manualSection"><h3>1. Cables</h3><ul><li>Si hay 3 cables y ninguno es rojo, corta el segundo.</li><li>Si hay 3 cables y el último es blanco, corta el último.</li><li>Si hay 4 cables y hay exactamente un amarillo, corta el primero.</li><li>Si hay 4 cables y hay dos rojos, corta el último rojo.</li><li>Si hay 5 cables y el último es negro, corta el cuarto.</li><li>Si ninguna regla anterior aplica, corta el último cable.</li></ul></div>
+<div class="manualSection"><h3>2. Símbolos</h3><p><strong>Fila A:</strong> ☀ → ☂ → ★ → ☯</p><p><strong>Fila B:</strong> ☘ → ☯ → ☂ → ☀</p><p><strong>Fila C:</strong> ★ → ☘ → ☀ → ☂</p></div>
+<div class="manualSection"><h3>3. Código final</h3><ul><li>Serie termina en par: primer dígito 4. Si impar: 7.</li><li>Pista “LUNA”: segundo dígito 2. “SOL”: 5.</li><li>Pista “NORTE”: tercer dígito 8. “SUR”: 1.</li><li>Cuarto dígito: cantidad de letras del número de serie.</li></ul></div>
+<div class="center" style="margin-top:18px"><button class="secondary" onclick="location.reload()">Volver al inicio</button></div>
+</section>
+<section id="endCard" class="card center hidden"><h2 id="endTitle"></h2><p id="endText"></p><button class="primary" onclick="location.reload()">Jugar otra vez</button></section>
+</main>
+<script>
+let strikes=0,seconds=300,timerId=null,wireSolution=-1,symbolsSolution=[],symbolProgress=[],finalCode='',codeSolved=false;
+function showOnly(id){['startCard','techCard','expertCard','endCard'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}
+function startExpert(){showOnly('expertCard')}
+function startTechnician(){showOnly('techCard');buildBomb();startTimer()}
+function startTimer(){updateTimer();timerId=setInterval(()=>{seconds--;updateTimer();if(seconds<=0){clearInterval(timerId);gameOver(false,'El tiempo se agotó.')}},1000)}
+function updateTimer(){let m=String(Math.floor(seconds/60)).padStart(2,'0'),s=String(seconds%60).padStart(2,'0');document.getElementById('timer').textContent=`${m}:${s}`}
+function registerStrike(msg){strikes++;document.getElementById('strikeCount').textContent=strikes;let st=document.getElementById('techStatus');st.textContent=msg;st.className='status bad';if(strikes>=3){clearInterval(timerId);gameOver(false,'Se acumularon 3 errores.')}}
+function buildBomb(){buildWires();buildSymbols();buildCode()}
+function buildWires(){
+ const sets=[['bluewire','yellow','white'],['red','white','white'],['red','red','bluewire','white'],['yellow','bluewire','black','white'],['white','bluewire','red','yellow','black']];
+ const set=sets[Math.floor(Math.random()*sets.length)],box=document.getElementById('wireBox');box.innerHTML='';
+ if(set.length===3&&!set.includes('red'))wireSolution=1;else if(set.length===3&&set[2]==='white')wireSolution=2;else if(set.length===4&&set.filter(x=>x==='yellow').length===1)wireSolution=0;else if(set.length===4&&set.filter(x=>x==='red').length===2)wireSolution=set.lastIndexOf('red');else if(set.length===5&&set[4]==='black')wireSolution=3;else wireSolution=set.length-1;
+ set.forEach((color,i)=>{let d=document.createElement('div');d.className=`wire ${color}`;d.onclick=()=>cutWire(i,d);box.appendChild(d)})
+}
+function cutWire(i,el){if(el.dataset.cut==='1')return;el.dataset.cut='1';el.style.opacity='.25';if(i===wireSolution){document.getElementById('wireBox').dataset.solved='1';setStatus('Módulo de cables resuelto.',true);checkWin()}else registerStrike('Cable incorrecto.')}
+function buildSymbols(){const rows=[['☀','☂','★','☯'],['☘','☯','☂','☀'],['★','☘','☀','☂']];const chosen=rows[Math.floor(Math.random()*rows.length)],scrambled=[...chosen].sort(()=>Math.random()-.5);symbolsSolution=chosen;symbolProgress=[];let box=document.getElementById('symbolBox');box.innerHTML='';scrambled.forEach(sym=>{let d=document.createElement('div');d.className='symbol';d.textContent=sym;d.onclick=()=>pressSymbol(sym,d);box.appendChild(d)})}
+function pressSymbol(sym,el){let expected=symbolsSolution[symbolProgress.length];if(sym===expected){symbolProgress.push(sym);el.classList.add('selected');el.style.pointerEvents='none';if(symbolProgress.length===4){document.getElementById('symbolBox').dataset.solved='1';setStatus('Módulo de símbolos resuelto.',true);checkWin()}}else{symbolProgress=[];document.querySelectorAll('.symbol').forEach(x=>{x.classList.remove('selected');x.style.pointerEvents='auto'});registerStrike('Orden de símbolos incorrecto.')}}
+function buildCode(){const letters=['AX','BR','LM','QZ','TR'],nums=Math.floor(Math.random()*90+10),serial=letters[Math.floor(Math.random()*letters.length)]+nums,h1=Math.random()<.5?'LUNA':'SOL',h2=Math.random()<.5?'NORTE':'SUR';document.getElementById('serialDisplay').textContent=serial;document.getElementById('codeHint1').textContent=`Pista 1: ${h1}`;document.getElementById('codeHint2').textContent=`Pista 2: ${h2}`;const last=Number(String(nums).slice(-1)),d1=last%2===0?4:7,d2=h1==='LUNA'?2:5,d3=h2==='NORTE'?8:1,d4=(serial.match(/[A-Z]/g)||[]).length;finalCode=`${d1}${d2}${d3}${d4}`}
+function enterCode(){let val=prompt('Introduce el código de 4 dígitos:');if(val===null)return;if(val.trim()===finalCode){codeSolved=true;setStatus('Código correcto.',true);checkWin()}else registerStrike('Código incorrecto.')}
+function setStatus(msg,ok){let st=document.getElementById('techStatus');st.textContent=msg;st.className='status '+(ok?'ok':'bad')}
+function checkWin(){if(document.getElementById('wireBox').dataset.solved==='1'&&document.getElementById('symbolBox').dataset.solved==='1'&&codeSolved){clearInterval(timerId);gameOver(true,'¡Bomba desactivada! Ganaron trabajando juntos.')}}
+function gameOver(win,msg){showOnly('endCard');document.getElementById('endTitle').textContent=win?'✅ Misión cumplida':'💥 La bomba explotó';document.getElementById('endText').textContent=msg}
+</script>
+</body>
+</html>
